@@ -1,0 +1,1093 @@
+﻿﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHENKENG Shopping Mall</title>
+    <!-- Core Scripts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF3366;
+            --secondary: #2EC4B6;
+            --pixel-bg: #0b0b1a;
+            --neon-pink: #ff00ff;
+            --neon-blue: #00ffff;
+            --neon-yellow: #ffff00;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--pixel-bg);
+            color: white;
+            overflow: hidden;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .retro-font {
+            font-family: 'Press Start 2P', cursive;
+            line-height: 1.5;
+        }
+
+        #bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            background: 
+                linear-gradient(rgba(11, 11, 26, 0.8), rgba(11, 11, 26, 0.8)),
+                linear-gradient(var(--neon-pink) 2px, transparent 2px),
+                linear-gradient(90deg, var(--neon-pink) 2px, transparent 2px);
+            background-size: 100% 100%, 50px 50px, 50px 50px;
+            background-position: center bottom;
+            perspective: 500px;
+        }
+
+        #bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(0, 255, 255, 0.1) 0%, rgba(11, 11, 26, 0.9) 80%);
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(16px);
+            border: 4px solid #fff;
+            box-shadow: 10px 10px 0px #000;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .item-card {
+            transition: all 0.2s;
+            border: 4px solid transparent;
+            background: rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+
+        .item-card:hover:not(.locked) {
+            transform: translateY(-4px);
+            border-color: var(--neon-blue);
+            background: rgba(0, 255, 255, 0.15);
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        .item-image {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            background: #1e293b;
+        }
+
+        .locked {
+            opacity: 0.35;
+            cursor: not-allowed !important;
+            border-style: dashed;
+            border-color: rgba(255,255,255,0.2);
+            filter: grayscale(1);
+        }
+
+        .crt::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.02));
+            z-index: 9999;
+            background-size: 100% 3px, 3px 100%;
+            pointer-events: none;
+        }
+
+        .grammar-blank {
+            display: inline-block;
+            min-width: 120px;
+            border-bottom: 4px solid #fff;
+            padding: 0 10px;
+            color: #FF3366;
+            text-align: center;
+        }
+
+        .grammar-option {
+            background: #1e293b;
+            border: 2px solid #fff;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .grammar-option:hover {
+            background: #FF3366;
+            transform: scale(1.1);
+        }
+
+        .flashcard-view {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            max-height: 55vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .flashcard-item {
+            cursor: pointer;
+            transition: transform 0.2s;
+            background: rgba(15, 23, 42, 0.95);
+            border: 4px solid white;
+            padding: 16px;
+            text-align: center;
+        }
+
+        #zoom-portal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0,0,0,0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .zoomed-content {
+            background: #1e293b;
+            border: 8px solid white;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px var(--neon-blue);
+            animation: zoomIn 0.3s ease-out;
+        }
+
+        @keyframes zoomIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .kb-btn {
+            font-size: 2rem !important;
+            padding: 0 !important;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e293b;
+            color: white;
+            border: 4px solid white;
+            box-shadow: 4px 4px 0px black;
+        }
+        
+        .kb-btn:hover { background: #06b6d4; color: black; }
+
+        .arcade-window {
+            width: 800px;
+            height: 600px;
+            background: #000;
+            border: 10px solid #333;
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mall-marquee {
+            width: 100%;
+            background: #000;
+            border-bottom: 4px solid var(--neon-pink);
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 10px 0;
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        .speaker-btn {
+            background: var(--neon-blue);
+            color: black;
+            border: 2px solid white;
+            padding: 6px 16px;
+            font-size: 12px;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .speaker-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+
+        /* Grammar Feedback */
+        .feedback-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            z-index: 10;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="crt">
+
+    <div id="bg-container"></div>
+    <div id="bg-overlay"></div>
+
+    <!-- ZOOM PORTAL -->
+    <div id="zoom-portal" onclick="closeZoom()">
+        <div class="zoomed-content" onclick="event.stopPropagation()">
+            <div id="portal-img-container" class="w-full h-80 mb-6 border-4 border-white overflow-hidden">
+                <img id="portal-img" src="" class="w-full h-full object-cover">
+            </div>
+            <h3 id="portal-title" class="retro-font text-3xl text-cyan-400 mb-2">TITLE</h3>
+            <p id="portal-price" class="text-3xl text-yellow-400 font-black mb-6">$0</p>
+            <div class="flex flex-col gap-4">
+                <button id="portal-voice-btn" class="bg-cyan-500 text-black py-4 retro-font">LISTEN 🔊</button>
+                <button onclick="closeZoom()" class="bg-white text-black py-4 retro-font">CLOSE [X]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Screen -->
+    <div id="start-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center text-center p-4">
+        <div class="mall-marquee fixed top-0 left-0">
+            <div class="marquee-content retro-font text-[10px] text-yellow-400">
+                Welcome to SHENKENG shopping mall - INSERT COIN - HIGH SCORE: 99999 - TEACHER JOY PRESENTS...
+            </div>
+        </div>
+
+        <div class="glass p-12 flex flex-col items-center border-neon-pink animate__animated animate__zoomIn">
+            <div class="flex items-center gap-4 mb-8">
+                <span class="w-8 h-8 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]"></span>
+                <span class="retro-font text-[12px] text-pink-400">CREDIT 100</span>
+                <span class="w-8 h-8 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_red]"></span>
+            </div>
+            
+            <h1 class="retro-font text-4xl md:text-6xl mb-6 text-white drop-shadow-[8px_8px_0px_#ff00ff]">
+                SHENKENG<br>MALL
+            </h1>
+            <p class="retro-font text-[14px] mb-12 text-cyan-400 tracking-[0.5em] animate__animated animate__pulse animate__infinite">FASHION TYCOON EDITION</p>
+            
+            <div class="space-y-4">
+                <button onclick="initApp()" class="btn-retro-white px-16 py-8 retro-font text-2xl md:text-4xl shadow-[6px_6px_0px_#333] border-[6px] border-black bg-white text-black hover:bg-cyan-400 active:translate-y-1">
+                    PRESS START
+                </button>
+            </div>
+            <p class="mt-12 retro-font text-[12px] text-white/70">TEACHER JOY'S DISTRICT v6.1</p>
+        </div>
+    </div>
+
+    <!-- Flashcard Preview -->
+    <div id="flashcard-screen" class="fixed inset-0 z-[110] hidden flex flex-col items-center justify-center p-8">
+        <div class="glass w-full max-w-6xl p-8 md:p-12 animate__animated animate__fadeIn">
+            <div class="flex justify-between items-center mb-8 border-b-4 border-cyan-400 pb-4">
+                <h2 class="retro-font text-3xl text-cyan-400">SHENKENG CATALOG</h2>
+                <div class="retro-font text-[10px] text-slate-400 tracking-widest uppercase">Click cards to see details</div>
+            </div>
+            
+            <div id="flashcard-container" class="flashcard-view mb-8"></div>
+            
+            <button onclick="startGame()" class="bg-white text-black border-[6px] border-black shadow-[6px_6px_0px_#333] w-full py-8 retro-font text-2xl active:translate-y-1 hover:bg-pink-500 hover:text-white">
+                START SHOPPING
+            </button>
+        </div>
+    </div>
+
+    <!-- Game HUD -->
+    <div id="game-container" class="hidden h-screen grid grid-cols-1 lg:grid-cols-[1fr,450px]">
+        <div class="relative overflow-y-auto p-8">
+            <div class="flex justify-between items-center mb-8 glass p-8 border-cyan-400">
+                <div class="flex flex-col gap-4">
+                    <div>
+                        <h2 class="retro-font text-xl text-cyan-400">SHENKENG SHOPPING MALL</h2>
+                        <p class="text-[10px] mt-3 retro-font opacity-70">LEARN GRAMMAR TO ADD ITEMS</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-[10px] retro-font text-slate-400 mb-2">CREDITS</div>
+                    <div class="text-6xl font-black text-yellow-400 drop-shadow-[4px_4px_0px_#000]" id="balance-display">$100</div>
+                </div>
+            </div>
+            <div id="shop-grid" class="shop-grid"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="bg-black/85 border-l-8 border-white p-6 flex flex-col gap-6">
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="openKeyboard()" class="bg-blue-600 border-4 border-white p-6 retro-font text-[12px] hover:bg-blue-500 shadow-[4px_4px_0px_#000] active:translate-y-1">
+                    KEYBOARD
+                </button>
+                <button onclick="showGameInstructions()" class="bg-amber-500 border-4 border-white p-6 retro-font text-[12px] hover:bg-amber-400 shadow-[4px_4px_0px_#000] active:translate-y-1">
+                    PLAY GAME
+                </button>
+            </div>
+
+            <div class="flex-1 flex flex-col glass p-6 overflow-hidden border-pink-500">
+                <h3 class="retro-font text-[12px] mb-8 text-pink-500 underline decoration-4">MY SHOPPING BAG <span id="cart-count">(0)</span></h3>
+                <div id="cart-list" class="flex-1 overflow-y-auto space-y-5 mb-4"></div>
+                <div class="border-t-4 border-white pt-6">
+                    <div class="flex justify-between items-end mb-8">
+                        <span class="retro-font text-[12px]">TOTAL:</span>
+                        <span class="text-4xl font-black text-emerald-400" id="total-cost">$0</span>
+                    </div>
+                    <button id="pay-btn" onclick="openCheckout()" disabled class="w-full py-6 bg-emerald-500 border-4 border-black retro-font text-[14px] shadow-[6px_6px_0px_#000] active:translate-y-1 disabled:opacity-30">
+                        GO TO CHECKOUT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mini-Game Modal -->
+    <div id="game-modal" class="fixed inset-0 hidden flex items-center justify-center p-6 backdrop-blur-xl z-[2000]">
+        <div id="instruction-screen" class="glass max-w-xl w-full p-12 text-center border-amber-500">
+            <h3 class="retro-font text-2xl text-amber-500 mb-10 underline">PAC-MAN ARCADE</h3>
+            <div class="space-y-8 text-left retro-font text-[12px] logic-relaxed text-slate-100">
+                <p>> USE ARROW KEYS TO MOVE</p>
+                <p>> AVOID THE GHOSTS</p>
+                <p>> COLLECT DOTS FOR PROFIT</p>
+            </div>
+            <button onclick="startMiniGame()" class="bg-white text-black border-[4px] border-black px-8 py-8 retro-font text-lg w-full active:translate-y-1 mt-8">START ARCADE</button>
+            <button onclick="hideGameModal()" class="block mx-auto mt-8 text-[12px] retro-font opacity-50">CANCEL</button>
+        </div>
+        <div id="active-game-container" class="hidden flex flex-col items-center">
+            <div class="arcade-window"><canvas id="pacman-canvas"></canvas></div>
+            <div id="pacman-controls" class="w-[800px] flex justify-center gap-4 my-4">
+                <button onmousedown="handleNav('ArrowUp')" class="bg-slate-700 w-20 h-16 border-2 border-white retro-font text-xl">↑</button>
+                <div class="flex flex-col gap-4">
+                    <button onmousedown="handleNav('ArrowLeft')" class="bg-slate-700 w-20 h-16 border-2 border-white retro-font text-xl">←</button>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <button onmousedown="handleNav('ArrowRight')" class="bg-slate-700 w-20 h-16 border-2 border-white retro-font text-xl">→</button>
+                </div>
+                <button onmousedown="handleNav('ArrowDown')" class="bg-slate-700 w-20 h-16 border-2 border-white retro-font text-xl">↓</button>
+            </div>
+            <div class="w-[820px] bg-slate-900 p-8 flex justify-between items-center border-x-8 border-b-8 border-white">
+                <div class="retro-font text-amber-400 text-xl">PROFIT: $<span id="session-cash">0</span></div>
+                <div class="flex gap-6">
+                    <button onclick="exitArcadeWithoutCollecting()" class="bg-slate-700 px-10 py-5 border-4 border-black retro-font text-[12px]">EXIT</button>
+                    <button id="collect-btn" onclick="collectCash()" class="bg-emerald-500 px-10 py-5 border-4 border-black retro-font text-[12px]">COLLECT CASH</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grammar Modal -->
+    <div id="grammar-modal" class="fixed inset-0 hidden flex items-center justify-center p-6 backdrop-blur-2xl z-[5000]">
+        <div class="glass max-w-3xl w-full p-12 border-pink-500 animate__animated animate__pulse relative">
+            <!-- Feedback Symbols -->
+            <div id="feedback-correct" class="feedback-overlay text-emerald-500">✅</div>
+            <div id="feedback-wrong" class="feedback-overlay text-red-500">❌</div>
+
+            <div class="flex gap-8 mb-10">
+                <img id="grammar-item-img" src="" class="w-48 h-48 border-4 border-white object-cover">
+                <div class="flex-1">
+                    <h3 id="grammar-item-title" class="retro-font text-2xl text-pink-500 mb-4">ITEM NAME</h3>
+                    <div id="grammar-item-price" class="text-4xl text-yellow-400 font-black">$0</div>
+                </div>
+            </div>
+            
+            <div class="space-y-12 mb-12">
+                <div class="retro-font text-lg md:text-xl leading-relaxed">
+                    Q: How much <span id="blank-1" class="grammar-blank">?</span> the <span id="grammar-item-name">...</span>?
+                </div>
+                <div class="retro-font text-lg md:text-xl leading-relaxed">
+                    A: <span id="blank-2" class="grammar-blank">?</span> $<span id="grammar-item-val">0</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="grammar-options"></div>
+            
+            <button onclick="closeGrammar()" class="mt-12 block mx-auto retro-font text-xs opacity-50">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- Keyboard Modal -->
+    <div id="keyboard-modal" class="fixed inset-0 bg-black/98 hidden z-[3000] flex items-center justify-center p-6">
+        <div class="glass max-w-7xl w-full p-12 border-cyan-400 relative">
+             <div class="flex justify-between items-center mb-6">
+                <h3 class="retro-font text-xl text-cyan-400 underline">INPUT PRODUCT CODE</h3>
+                <button onclick="closeKeyboard()" class="retro-font text-4xl text-red-500">X</button>
+            </div>
+            <div id="kb-display" class="w-full h-24 bg-black border-[6px] border-white mb-6 flex items-center justify-center retro-font text-5xl text-cyan-400">_ _ _</div>
+            <div id="kb-grid" class="grid grid-cols-10 gap-3 mb-6"></div>
+            <div class="grid grid-cols-5 gap-4">
+                <button onclick="toggleShift()" id="shift-btn" class="py-5 bg-slate-700 retro-font text-[10px] border-4 border-white">LOWERCASE</button>
+                <button onclick="eraseLast()" class="py-5 bg-orange-600 retro-font text-[10px] border-4 border-white">ERASE</button>
+                <button onclick="resetInput()" class="py-5 bg-slate-800 retro-font text-[10px] border-4 border-white">RESET</button>
+                <button onclick="buyUnlock()" class="py-5 bg-purple-600 retro-font text-[10px] border-4 border-white">UNLOCK ($50)</button>
+                <button onclick="checkWord()" class="py-5 bg-cyan-600 retro-font text-[10px] border-4 border-white">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx;
+        let musicGain;
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            musicGain = audioCtx.createGain();
+            musicGain.gain.value = 0.1; 
+            musicGain.connect(audioCtx.destination);
+            startPacmanMusic();
+        }
+
+        function startPacmanMusic() {
+            const tempo = 120;
+            const noteDuration = 60 / tempo / 2;
+            const pacmanTheme = [
+                493.88, 987.77, 739.99, 622.25, 987.77, 739.99, 622.25, 0,
+                523.25, 1046.50, 783.99, 659.25, 1046.50, 783.99, 659.25, 0,
+                493.88, 987.77, 739.99, 622.25, 987.77, 739.99, 622.25, 0,
+                622.25, 659.25, 698.46, 739.99, 783.99, 830.61, 880.00, 987.77
+            ];
+            let step = 0;
+
+            setInterval(() => {
+                if (!audioCtx || !gameActive || pacmanTheme[step] === 0) {
+                    step = (step + 1) % pacmanTheme.length;
+                    return;
+                }
+                const freq = pacmanTheme[step];
+                const osc = audioCtx.createOscillator();
+                const noteGain = audioCtx.createGain();
+                
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                noteGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+                noteGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + noteDuration);
+                
+                osc.connect(noteGain);
+                noteGain.connect(musicGain);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + noteDuration);
+                
+                step = (step + 1) % pacmanTheme.length;
+            }, noteDuration * 1000);
+        }
+
+        function playSound(type) {
+            if (!audioCtx) initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'correct') {
+                osc.type = 'sine'; 
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; 
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(140, audioCtx.currentTime + 0.4);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime); 
+                gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            }
+        }
+
+        function playPhonics(text) {
+            if (!window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.85;
+            utterance.pitch = 1.2;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        const ITEMS = [
+            { id: "dress", price: 300, plural: false, img: "https://images.unsplash.com/photo-1595777457583-95e059d581b8?q=80&w=400" },
+            { id: "skirt", price: 200, plural: false, img: "https://images.unsplash.com/photo-1582142306909-195724d33ffc?q=80&w=400" },
+            { id: "jacket", price: 450, plural: false, img: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=400" },
+            { id: "t-shirt", price: 150, plural: false, img: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=400" },
+            { id: "pants", price: 250, plural: true, img: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=400" },
+            { id: "shorts", price: 100, plural: true, img: "https://images.unsplash.com/photo-1591195853828-11db59a44f6b?q=80&w=400" },
+            { id: "sneakers", price: 600, plural: true, img: "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?q=80&w=400" },
+            { id: "socks", price: 50, plural: true, img: "https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?q=80&w=400" },
+            { id: "coat", price: 800, plural: false, img: "https://images.unsplash.com/photo-1539533018447-63fcce2678e3?q=80&w=400" },
+            { id: "jeans", price: 350, plural: true, img: "https://images.unsplash.com/photo-1542272604-787c3835535d?q=80&w=400" },
+            { id: "hat", price: 120, plural: false, img: "https://images.unsplash.com/photo-1572307480813-ceb0e59d8325?q=80&w=400" }
+        ];
+
+        let state = {
+            balance: 100,
+            unlocked: new Set(['t-shirt', 'jacket', 'hat']),
+            cart: {},
+            typed: "",
+            sessionScore: 0,
+            isShifted: false,
+            currentChallengeItem: null,
+            grammarProgress: { b1: null, b2: null }
+        };
+
+        function initApp() {
+            initAudio();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('flashcard-screen').classList.remove('hidden');
+            showFlashcards();
+        }
+
+        function showFlashcards() {
+            const container = document.getElementById('flashcard-container');
+            container.innerHTML = ITEMS.map(i => `
+                <div class="flashcard-item" onclick="openZoom('${i.id}')">
+                    <div class="img-box overflow-hidden h-32 md:h-40 mb-3">
+                        <img src="${i.img}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="retro-font text-[10px] mb-2 uppercase tracking-tighter">${i.id}</div>
+                    <div class="text-yellow-400 font-black mb-2">$${i.price}</div>
+                    <button class="speaker-btn retro-font" onclick="event.stopPropagation(); playPhonics('${i.id}')">LISTEN 🔊</button>
+                </div>
+            `).join('');
+        }
+
+        function openZoom(itemId) {
+            const item = ITEMS.find(i => i.id === itemId);
+            if(!item) return;
+            document.getElementById('portal-img').src = item.img;
+            document.getElementById('portal-title').innerText = item.id.toUpperCase();
+            document.getElementById('portal-price').innerText = `$${item.price}`;
+            document.getElementById('portal-voice-btn').onclick = () => playPhonics(item.id);
+            document.getElementById('zoom-portal').style.display = 'flex';
+        }
+
+        function closeZoom() { document.getElementById('zoom-portal').style.display = 'none'; }
+
+        function startGame() {
+            document.getElementById('flashcard-screen').classList.add('animate__fadeOut');
+            setTimeout(() => {
+                document.getElementById('flashcard-screen').classList.add('hidden');
+                document.getElementById('game-container').classList.remove('hidden');
+                renderShop(); renderKeyboard(); updateUI();
+            }, 500);
+        }
+
+        function renderShop() {
+            const grid = document.getElementById('shop-grid');
+            grid.innerHTML = ITEMS.map(item => {
+                const isUnlocked = state.unlocked.has(item.id);
+                const canAfford = state.balance >= item.price;
+                const isItemLocked = !isUnlocked || !canAfford;
+
+                return `
+                    <div class="item-card glass ${isItemLocked ? 'locked' : ''}" onclick="${!isItemLocked ? `triggerGrammar('${item.id}')` : ''}">
+                        <img src="${item.img}" class="item-image">
+                        <div class="p-4 text-center">
+                            <h4 class="retro-font text-[10px] mb-2 font-bold">${item.id.toUpperCase()}</h4>
+                            <div class="text-yellow-400 font-black retro-font text-[12px]">$${item.price}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function triggerGrammar(id) {
+            const item = ITEMS.find(i => i.id === id);
+            const total = calculateCurrentTotal();
+            if (state.balance < (total + item.price)) {
+                playSound('error');
+                return;
+            }
+            state.currentChallengeItem = item;
+            state.grammarProgress = { b1: null, b2: null };
+            document.getElementById('grammar-item-img').src = item.img;
+            document.getElementById('grammar-item-title').innerText = item.id.toUpperCase();
+            document.getElementById('grammar-item-price').innerText = `$${item.price}`;
+            document.getElementById('grammar-item-name').innerText = item.id;
+            document.getElementById('grammar-item-val').innerText = item.price;
+            document.getElementById('blank-1').innerText = "?";
+            document.getElementById('blank-2').innerText = "?";
+            
+            document.getElementById('feedback-correct').style.display = 'none';
+            document.getElementById('feedback-wrong').style.display = 'none';
+
+            const optPool1 = ["is", "are", "am", "be"];
+            const optPool2 = ["It is", "They are", "We are", "He is"];
+            const options = [...optPool1, ...optPool2];
+            
+            document.getElementById('grammar-options').innerHTML = options.map(opt => `
+                <button class="grammar-option retro-font text-[10px]" onclick="handleGrammarSelect('${opt}')">${opt}</button>
+            `).join('');
+            document.getElementById('grammar-modal').classList.remove('hidden');
+        }
+
+        function handleGrammarSelect(opt) {
+            const pool1 = ["is", "are", "am", "be"];
+            const pool2 = ["It is", "They are", "We are", "He is"];
+
+            if (!state.grammarProgress.b1) {
+                if (pool1.includes(opt)) {
+                    state.grammarProgress.b1 = opt;
+                    document.getElementById('blank-1').innerText = opt;
+                } else {
+                    showFeedback(false);
+                }
+            } else if (!state.grammarProgress.b2) {
+                if (pool2.includes(opt)) {
+                    state.grammarProgress.b2 = opt;
+                    document.getElementById('blank-2').innerText = opt;
+                    checkGrammar();
+                } else {
+                    showFeedback(false);
+                }
+            }
+        }
+
+        function showFeedback(isCorrect) {
+            const overlay = document.getElementById(isCorrect ? 'feedback-correct' : 'feedback-wrong');
+            overlay.style.display = 'flex';
+            playSound(isCorrect ? 'correct' : 'error');
+            
+            if (!isCorrect) {
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    state.grammarProgress = { b1: null, b2: null };
+                    document.getElementById('blank-1').innerText = "?";
+                    document.getElementById('blank-2').innerText = "?";
+                }, 800);
+            }
+        }
+
+        function checkGrammar() {
+            const item = state.currentChallengeItem;
+            const correctB1 = item.plural ? "are" : "is";
+            const correctB2 = item.plural ? "They are" : "It is";
+            
+            if (state.grammarProgress.b1 === correctB1 && state.grammarProgress.b2 === correctB2) {
+                showFeedback(true);
+                addToCart(item.id);
+                setTimeout(closeGrammar, 1200);
+            } else {
+                showFeedback(false);
+            }
+        }
+
+        function closeGrammar() { document.getElementById('grammar-modal').classList.add('hidden'); }
+        function calculateCurrentTotal() { return Object.entries(state.cart).reduce((acc, [id, qty]) => acc + (ITEMS.find(i => i.id === id).price * qty), 0); }
+        
+        function updateUI() {
+            document.getElementById('balance-display').innerText = `$${state.balance}`;
+            const total = calculateCurrentTotal();
+            document.getElementById('total-cost').innerText = `$${total}`;
+            document.getElementById('pay-btn').disabled = (total === 0 || state.balance < total);
+            const cartList = document.getElementById('cart-list');
+            const entries = Object.entries(state.cart);
+            cartList.innerHTML = entries.map(([id, qty]) => {
+                const item = ITEMS.find(i => i.id === id);
+                return `
+                    <div class="bg-black/70 p-4 border-l-8 border-cyan-400 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <img src="${item.img}" class="w-12 h-12 object-cover">
+                            <div class="text-[10px] retro-font">${id.toUpperCase()} x${qty}</div>
+                        </div>
+                        <button onclick="removeFromCart('${id}')" class="bg-red-600 text-white w-8 h-8 border-2 border-black">-</button>
+                    </div>`;
+            }).join('') || '<div class="text-center opacity-30 mt-24 retro-font text-[10px]">BAG IS EMPTY</div>';
+            document.getElementById('cart-count').innerText = `(${entries.length})`;
+            
+            renderShop();
+        }
+
+        function addToCart(id) { state.cart[id] = (state.cart[id] || 0) + 1; updateUI(); }
+        function removeFromCart(id) { if (state.cart[id]) { state.cart[id]--; if (state.cart[id] === 0) delete state.cart[id]; updateUI(); } }
+        
+        function openKeyboard() { state.typed = ""; updateKeyboardDisplay(); document.getElementById('keyboard-modal').classList.remove('hidden'); }
+        function closeKeyboard() { document.getElementById('keyboard-modal').classList.add('hidden'); }
+        function updateKeyboardDisplay() { document.getElementById('kb-display').innerText = state.typed || "_ _ _"; }
+        function eraseLast() { state.typed = state.typed.slice(0, -1); updateKeyboardDisplay(); }
+        function resetInput() { state.typed = ""; updateKeyboardDisplay(); }
+        
+        function toggleShift() { 
+            state.isShifted = !state.isShifted; 
+            document.getElementById('shift-btn').innerText = state.isShifted ? 'UPPERCASE' : 'LOWERCASE';
+            renderKeyboard(); 
+        }
+        
+        function renderKeyboard() {
+            const grid = document.getElementById('kb-grid');
+            grid.innerHTML = "ABCDEFGHIJKLMNOPQRSTUVWXYZ-".split("").map(c => {
+                const char = state.isShifted ? c.toLowerCase() : c.toUpperCase();
+                return `<button class="kb-btn retro-font" onclick="state.typed += '${char}'; updateKeyboardDisplay();">${char}</button>`;
+            }).join('');
+        }
+        
+        function checkWord() {
+            const input = state.typed.toLowerCase();
+            const found = ITEMS.find(i => i.id === input);
+            if(found) { 
+                state.unlocked.add(found.id); 
+                updateUI(); 
+                playSound('correct'); 
+                closeKeyboard(); 
+            } else { 
+                playSound('error'); 
+            }
+        }
+        
+        function buyUnlock() { 
+            if(state.balance >= 50) { 
+                const next = ITEMS.find(i => !state.unlocked.has(i.id)); 
+                if(next) { 
+                    state.balance -= 50; 
+                    state.unlocked.add(next.id); 
+                    updateUI(); 
+                    playSound('correct'); 
+                    closeKeyboard(); 
+                } 
+            } 
+        }
+
+        function openCheckout() {
+            const total = calculateCurrentTotal();
+            state.balance -= total;
+            state.cart = {};
+            updateUI();
+            confetti({ particleCount: 200, spread: 70, origin: { y: 0.6 } });
+        }
+
+        function showGameInstructions() { 
+            state.sessionScore = 0;
+            document.getElementById('session-cash').innerText = "0";
+            document.getElementById('instruction-screen').classList.remove('hidden');
+            document.getElementById('active-game-container').classList.add('hidden');
+            document.getElementById('game-modal').classList.remove('hidden'); 
+        }
+
+        function hideGameModal() { 
+            gameActive = false; 
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            document.getElementById('game-modal').classList.add('hidden'); 
+        }
+
+        function exitArcadeWithoutCollecting() {
+            const total = state.sessionScore;
+            if (total > 0) {
+                if (confirm("You have $" + total + " uncollected profit. Exit anyway?")) {
+                    state.sessionScore = 0;
+                    hideGameModal();
+                }
+            } else {
+                hideGameModal();
+            }
+        }
+        
+        const canvas = document.getElementById('pacman-canvas');
+        const ctx = canvas.getContext('2d');
+        let gameActive = false;
+        let animationFrameId = null;
+        const TILE = 40; 
+        let dots = [];
+
+        const MAP = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,0,1,1,1,1,0,1,1,1,1,0,1,1,1,1,0,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,1,1,1,0,0,1,1,1,1,0,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,0,1,0,1,1,1,1,1,1,0,1,0,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,1,0,1,1,1,1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,1,0,0,0,1,0,0,0,0,1],
+            [1,1,1,1,0,1,1,1,0,1,1,0,1,1,1,0,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let player = { 
+            tileX: 1, tileY: 1,
+            curDir: {x: 1, y: 0},
+            nextDir: {x: 1, y: 0},
+            progress: 0, 
+            speed: 0.12, 
+            mouth: 0, open: 1,
+            isMoving: false
+        };
+        let ghosts = [];
+
+        function isWalkable(tx, ty) {
+            if (ty < 0 || ty >= MAP.length || tx < 0 || tx >= MAP[0].length) return false;
+            return MAP[ty][tx] === 0;
+        }
+
+        function initPacman() {
+            canvas.width = 800;
+            canvas.height = 600;
+            dots = [];
+            for (let r = 0; r < MAP.length; r++) {
+                for (let c = 0; c < MAP[r].length; c++) {
+                    if (MAP[r][c] === 0) dots.push({ r, c, active: true });
+                }
+            }
+            player = { 
+                tileX: 1, tileY: 1,
+                curDir: {x: 1, y: 0},
+                nextDir: {x: 1, y: 0},
+                progress: 0,
+                speed: 0.12,
+                mouth: 0, open: 1,
+                isMoving: true
+            };
+            ghosts = [
+                { tileX: 18, tileY: 1, progress: 0, curDir: {x: -1, y: 0}, color: '#ff0000', speed: 0.05 },
+                { tileX: 18, tileY: 13, progress: 0, curDir: {x: -1, y: 0}, color: '#ffb8ff', speed: 0.06 },
+                { tileX: 1, tileY: 13, progress: 0, curDir: {x: 1, y: 0}, color: '#00ffff', speed: 0.05 }
+            ];
+        }
+
+        function updateGame() {
+            if(!gameActive) return;
+
+            if (player.isMoving) {
+                player.progress += player.speed;
+            }
+
+            if (player.progress >= 1) {
+                player.tileX += player.curDir.x;
+                player.tileY += player.curDir.y;
+                player.progress = 0;
+
+                const dot = dots.find(d => d.r === player.tileY && d.c === player.tileX && d.active);
+                if (dot) {
+                    dot.active = false;
+                    state.sessionScore += 20;
+                    document.getElementById('session-cash').innerText = state.sessionScore;
+                }
+
+                if (player.nextDir) {
+                    const canTurn = isWalkable(player.tileX + player.nextDir.x, player.tileY + player.nextDir.y);
+                    if (canTurn) {
+                        player.curDir = player.nextDir;
+                        player.isMoving = true;
+                    }
+                }
+
+                if (!isWalkable(player.tileX + player.curDir.x, player.tileY + player.curDir.y)) {
+                    player.isMoving = false;
+                    player.progress = 0;
+                } else {
+                    player.isMoving = true;
+                }
+            }
+
+            ghosts.forEach(g => {
+                g.progress += g.speed;
+                if (g.progress >= 1) {
+                    g.tileX += g.curDir.x;
+                    g.tileY += g.curDir.y;
+                    g.progress = 0;
+
+                    const possible = [
+                        {x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}
+                    ].filter(d => isWalkable(g.tileX + d.x, g.tileY + d.y) && !(d.x === -g.curDir.x && d.y === -g.curDir.y));
+
+                    if (possible.length > 0) {
+                        g.curDir = possible[Math.floor(Math.random() * possible.length)];
+                    } else {
+                        g.curDir = {x: -g.curDir.x, y: -g.curDir.y};
+                    }
+                }
+            });
+
+            draw();
+            checkCollision();
+            animationFrameId = requestAnimationFrame(updateGame);
+        }
+
+        function checkCollision() {
+            const px = (player.tileX + player.curDir.x * player.progress) * TILE;
+            const py = (player.tileY + player.curDir.y * player.progress) * TILE;
+
+            ghosts.forEach(g => {
+                const gx = (g.tileX + g.curDir.x * g.progress) * TILE;
+                const gy = (g.tileY + g.curDir.y * g.progress) * TILE;
+                
+                if (Math.hypot(px - gx, py - gy) < TILE * 0.75) {
+                    gameActive = false;
+                    cancelAnimationFrame(animationFrameId);
+                    playSound('error');
+                    
+                    setTimeout(() => {
+                        const msg = "GHOSTED! Points this session: $" + state.sessionScore + "\nYour points are saved for collection. Try again?";
+                        if(confirm(msg)) {
+                            startMiniGame();
+                        }
+                    }, 100);
+                }
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = "#000";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "#2424ff";
+            ctx.lineWidth = 4;
+            ctx.lineJoin = "round";
+            for (let r = 0; r < MAP.length; r++) {
+                for (let c = 0; c < MAP[r].length; c++) {
+                    if (MAP[r][c] === 1) {
+                        ctx.strokeRect(c * TILE + 4, r * TILE + 4, TILE - 8, TILE - 8);
+                    }
+                }
+            }
+
+            ctx.fillStyle = "#ffb8ae";
+            dots.forEach(d => {
+                if (d.active) {
+                    ctx.beginPath();
+                    ctx.arc(d.c * TILE + TILE/2, d.r * TILE + TILE/2, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            const px = (player.tileX + player.curDir.x * player.progress) * TILE + TILE/2;
+            const py = (player.tileY + player.curDir.y * player.progress) * TILE + TILE/2;
+            
+            if (player.isMoving) {
+                player.mouth += 0.12 * player.open;
+                if (player.mouth > 0.6 || player.mouth < 0) player.open *= -1;
+            } else {
+                player.mouth = 0.2;
+            }
+            
+            let rot = 0;
+            if (player.curDir.x === -1) rot = Math.PI;
+            if (player.curDir.y === -1) rot = -Math.PI/2;
+            if (player.curDir.y === 1) rot = Math.PI/2;
+
+            ctx.fillStyle = "yellow";
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.arc(px, py, TILE/2.2, rot + player.mouth, rot + 2 * Math.PI - player.mouth);
+            ctx.fill();
+
+            ghosts.forEach(g => {
+                const gx = (g.tileX + g.curDir.x * g.progress) * TILE + TILE/2;
+                const gy = (g.tileY + g.curDir.y * g.progress) * TILE + TILE/2;
+                
+                ctx.fillStyle = g.color;
+                ctx.beginPath();
+                ctx.arc(gx, gy - 2, TILE/2.5, Math.PI, 0);
+                ctx.lineTo(gx + TILE/2.5, gy + TILE/2.5);
+                ctx.lineTo(gx - TILE/2.5, gy + TILE/2.5);
+                ctx.fill();
+                
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(gx - 4, gy - 4, 3.5, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(gx + 4, gy - 4, 3.5, 0, 7); ctx.fill();
+                ctx.fillStyle = "black";
+                ctx.beginPath(); ctx.arc(gx - 4 + g.curDir.x*2, gy - 4 + g.curDir.y*2, 1.5, 0, 7); ctx.fill();
+                ctx.beginPath(); ctx.arc(gx + 4 + g.curDir.x*2, gy - 4 + g.curDir.y*2, 1.5, 0, 7); ctx.fill();
+            });
+        }
+
+        function handleNav(key) {
+            if(!gameActive) return;
+            let dir = null;
+            if (key === 'ArrowRight') dir = {x: 1, y: 0};
+            if (key === 'ArrowLeft') dir = {x: -1, y: 0};
+            if (key === 'ArrowUp') dir = {x: 0, y: -1};
+            if (key === 'ArrowDown') dir = {x: 0, y: 1};
+
+            if (dir) {
+                if (dir.x === -player.curDir.x && dir.x !== 0) {
+                    player.curDir = dir;
+                    player.nextDir = dir;
+                    player.progress = 1 - player.progress;
+                    player.tileX += dir.x;
+                    player.isMoving = true;
+                } else if (dir.y === -player.curDir.y && dir.y !== 0) {
+                    player.curDir = dir;
+                    player.nextDir = dir;
+                    player.progress = 1 - player.progress;
+                    player.tileY += dir.y;
+                    player.isMoving = true;
+                } else {
+                    player.nextDir = dir;
+                    if (!player.isMoving) {
+                        if (isWalkable(player.tileX + dir.x, player.tileY + dir.y)) {
+                            player.curDir = dir;
+                            player.isMoving = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+                e.preventDefault();
+                handleNav(e.key);
+            }
+        });
+
+        function startMiniGame() {
+            document.getElementById('instruction-screen').classList.add('hidden');
+            document.getElementById('active-game-container').classList.remove('hidden');
+            initPacman();
+            gameActive = true;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            updateGame();
+        }
+        
+        function collectCash() { 
+            if (state.sessionScore > 0) {
+                state.balance += state.sessionScore; 
+                state.sessionScore = 0;
+                document.getElementById('session-cash').innerText = "0";
+                gameActive = false;
+                if (animationFrameId) cancelAnimationFrame(animationFrameId);
+                hideGameModal(); 
+                updateUI(); 
+                confetti({ particleCount: 100, spread: 50, origin: { y: 0.8 } });
+            } else {
+                hideGameModal();
+            }
+        }
+    </script>
+</body>
+</html>
